@@ -54,6 +54,49 @@
 
 ---
 
+## 2.1 Pipeline de Criação Manual
+
+> Alternativa ao pipeline AI — usuário desenha a estrutura diretamente no editor.
+
+```
+┌────────────────────────────────────────────────────────────────────┐
+│  MANUAL MODE                                                        │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │  "Novo Mapa Vazio"                                           │   │
+│  │  Inicializa dungeon + floor vazio                            │   │
+│  └──────────────────────────────┬──────────────────────────────┘   │
+│                                 ▼                                   │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │  POLYGON EDITOR                                              │   │
+│  │  Desenha retângulos → Merge → Polígonos complexos            │   │
+│  │  Configura nome, tipo, lighting de cada space                │   │
+│  └──────────────────────────────┬──────────────────────────────┘   │
+│                                 ▼                                   │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │  ENTITY PLACEMENT                                            │   │
+│  │  Arrasta tokens/ícones para posições no mapa                 │   │
+│  └──────────────────────────────┬──────────────────────────────┘   │
+│                                 ▼                                   │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │  SKELETON GENERATOR (mesmo do pipeline AI)                   │   │
+│  │  Estrutura manual → Máscara técnica                          │   │
+│  └──────────────────────────────┬──────────────────────────────┘   │
+│                                 ▼                                   │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │  GEMINI IMAGE — Render                                       │   │
+│  │  Skeleton + Prompt visual → Imagem renderizada               │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+**Diferenças do Pipeline AI:**
+- Não usa Gemini Pro para gerar estrutura
+- Usuário define manualmente cada espaço, conexão e entidade
+- Render de imagem continua sendo via AI (Gemini Image)
+- Útil para: mapas de referência, conversão de mapas físicos, controle total
+
+---
+
 ## 3. Decisões de Design
 
 | Aspecto | Decisão |
@@ -64,7 +107,8 @@
 | Grid | Sim, tudo em grid |
 | Geometria | Polígonos arbitrários via merge de retângulos |
 | Aninhamento | Não — usar zones como anotações semânticas |
-| Input | Prompt livre OU form guiado |
+| Input | Prompt livre OU form guiado OU **criação manual** |
+| Modo Manual | Sim — estrutura desenhada à mão, render só via AI |
 | Export | JSON + imagem (backup/import) |
 | VTT | Nenhuma integração (futuro) |
 | Fog of War | Futuro |

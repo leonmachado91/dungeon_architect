@@ -4,35 +4,59 @@
 
 ---
 
+## Status do Projeto
+
+### MVP (Concluído)
+
+| Fase | Descrição | Status |
+|------|-----------|--------|
+| **Fase 0** | Fundação | ✅ Completa |
+| **Fase 1** | Data Layer | ✅ Completa |
+| **Fase 2** | AI Integration | ✅ Completa |
+| **Fase 3** | Canvas & Editor | ✅ Completa |
+| **Fase 4** | UI/UX | ✅ Completa |
+| **MVP Essentials** | Auto-save, Undo/Redo, Delete | ✅ Completa |
+| **Fase 5** | Polish & Verify | ✅ Completa |
+
+### Pós-MVP (Roadmap Futuro)
+
+| Fase        | Descrição                 | Status       |
+| ----------- | ------------------------- | ------------ |
+| **Fase 6**  | AI Rendering (nanobanana) | 🎯 Próxima   |
+| **Fase 7**  | Multi-Andar & Navegação   | ⏳ Planejada  |
+| **Fase 8**  | Export & Import           | ⏳ Planejada  |
+| **Fase 9**  | Biblioteca & Templates    | ⏳ Planejada  |
+
+
+---
+
 ## Visão Geral
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│  FASE 0: FUNDAÇÃO (2-3 dias)                                             │
+│  ✅ FASE 0: FUNDAÇÃO                                                     │
 │  Setup do projeto, design tokens, componentes base                       │
 ├──────────────────────────────────────────────────────────────────────────┤
-│  FASE 1: DATA LAYER (2-3 dias)                                           │
+│  ✅ FASE 1: DATA LAYER                                                   │
 │  PGLite setup, Drizzle schema, Zustand stores                            │
 ├──────────────────────────────────────────────────────────────────────────┤
-│  FASE 2: AI INTEGRATION (3-4 dias)                                       │
+│  ✅ FASE 2: AI INTEGRATION                                               │
 │  Vercel AI SDK, Zod schemas, Gemini integration                          │
 ├──────────────────────────────────────────────────────────────────────────┤
-│  FASE 3: CANVAS & EDITOR (5-7 dias)                                      │
-│  React Konva, layers, polygon editor, skeleton generator                 │
+│  ✅ FASE 3: CANVAS & EDITOR                                              │
+│  React Konva, layers, polygon editor, manual mode                        │
 ├──────────────────────────────────────────────────────────────────────────┤
-│  FASE 4: UI/UX (3-4 dias)                                                │
+│  ✅ FASE 4: UI/UX                                                        │
 │  Sidebar, Inspector, Toolbar, estados da aplicação                       │
 ├──────────────────────────────────────────────────────────────────────────┤
-│  FASE 5: POLISH & VERIFY (2-3 dias)                                      │
+│  ⏳ FASE 5: POLISH & VERIFY                                              │
 │  Testes, acessibilidade, performance, documentação                       │
 └──────────────────────────────────────────────────────────────────────────┘
-
-                          TOTAL ESTIMADO: 17-24 dias
 ```
 
 ---
 
-## FASE 0: Fundação
+## FASE 0: Fundação ✅
 
 > **Objetivo:** Projeto rodando com estrutura base e design system configurado.
 
@@ -88,7 +112,7 @@ src/
 
 ---
 
-## FASE 1: Data Layer
+## FASE 1: Data Layer ✅
 
 > **Objetivo:** Banco local funcionando com schemas e estado global.
 
@@ -152,7 +176,7 @@ interface MapState {
 
 ---
 
-## FASE 2: AI Integration
+## FASE 2: AI Integration ✅
 
 > **Objetivo:** Gerar estruturas de mapa via IA.
 
@@ -221,7 +245,7 @@ export async function generateMap(prompt: string) {
 
 ---
 
-## FASE 3: Canvas & Editor
+## FASE 3: Canvas & Editor ✅
 
 > **Objetivo:** Canvas interativo para visualizar e editar mapas.
 
@@ -238,6 +262,11 @@ export async function generateMap(prompt: string) {
 | 3.7 | Polygon Editor | Desenhar/redimensionar | Novo Space criado |
 | 3.8 | Clipper2 Merge | Unir polígonos adjacentes | 2 → 1 funciona |
 | 3.9 | Pan & Zoom | Scroll zoom, middle-mouse pan | Navegação fluida |
+| 3.10 | **Manual Mode: Novo Mapa** | Botão "Novo Mapa Vazio" cria dungeon sem AI | Dungeon vazio criado |
+| 3.11 | **Manual Mode: Add Space** | Desenhar retângulo → cria space | Space aparece no canvas |
+| 3.12 | **Manual Mode: Edit Space** | Editar nome, tipo, lighting via sidebar | Propriedades salvam |
+| 3.13 | **Manual Mode: Add Entity** | Arrasta token da sidebar ao canvas | Entity posicionada |
+| 3.14 | **Manual Mode: Render** | Gerar skeleton + chamar Gemini Image | Imagem renderizada sem geração AI prévia |
 
 ### Estrutura de Layers
 
@@ -271,7 +300,7 @@ const SKELETON_COLORS = {
 
 ---
 
-## FASE 4: UI/UX
+## FASE 4: UI/UX ✅
 
 > **Objetivo:** Interface completa seguindo os protótipos.
 
@@ -314,35 +343,35 @@ const SKELETON_COLORS = {
 
 ---
 
-## FASE 5: Polish & Verify
+## FASE 5: Polish & Verify ⏳
 
 > **Objetivo:** Qualidade de produção.
 
 ### Tarefas
 
-| # | Tarefa | Detalhes | Verificação |
-|---|--------|----------|-------------|
-| 5.1 | Keyboard nav | Tab navega elementos | Focus visible |
-| 5.2 | Focus rings | Outline amarelo em focus | Visível em tudo |
-| 5.3 | Responsividade | Tablet: sidebar colapsa | Layout adapta |
-| 5.4 | Mobile block | Mensagem "use desktop" | Exibe < 768px |
-| 5.5 | Lint + TypeScript | `npm run lint && tsc --noEmit` | Zero erros |
-| 5.6 | Security scan | `npm audit` | Sem críticos |
-| 5.7 | UX Audit | Verificar protótipos vs implementação | Fidelidade alta |
-| 5.8 | Lighthouse | Performance, A11y, Best Practices | Score > 80 |
-| 5.9 | README | Instruções de uso | Documentação clara |
+| # | Tarefa | Detalhes | Status |
+|---|--------|----------|--------|
+| 5.1 | Keyboard nav | Tab navega elementos | ⏳ |
+| 5.2 | Focus rings | Outline amarelo em focus | ⏳ |
+| 5.3 | Responsividade | Tablet: sidebar colapsa | ⏳ |
+| 5.4 | Mobile block | Mensagem "use desktop" | ⏳ |
+| 5.5 | Lint + TypeScript | `npm run lint && tsc --noEmit` | ⏳ |
+| 5.6 | Security scan | `npm audit` | ⏳ |
+| 5.7 | UX Audit | Verificar protótipos vs implementação | ⏳ |
+| 5.8 | Lighthouse | Performance, A11y, Best Practices | ⏳ |
+| 5.9 | README | Instruções de uso | ⏳ |
 
 ### Checklist Final
 
-- [ ] Usuário gera mapa via prompt ou form
-- [ ] Skeleton exibe no canvas
-- [ ] Polígonos são editáveis
-- [ ] Tokens podem ser arrastados
-- [ ] Multi-andar funciona
-- [ ] Undo/Redo funciona
+- [x] Usuário gera mapa via prompt ou form
+- [x] Skeleton exibe no canvas
+- [x] Polígonos são editáveis
+- [x] Tokens podem ser arrastados
+- [ ] Multi-andar funciona (navegação entre floors)
+- [x] Undo/Redo funciona
 - [ ] Export JSON + imagem funciona
-- [ ] Dados persistem localmente
-- [ ] Sem cores púrpura na UI
+- [x] Dados persistem localmente
+- [x] Sem cores púrpura na UI
 
 ---
 
@@ -372,15 +401,18 @@ FASE 0 ──────┬──────> FASE 1 ────────>
 - **Fase 1** (Data) e **Fase 2** (AI) podem rodar em paralelo
 - **Fase 3** (Canvas) depende de Fase 1
 - **Fase 4** (UI) depende de Fase 2 e 3
-- **Fase 5** (Polish) é a última
+- **Fase 5** (Polish) é a última do MVP
 
 ---
 
-## Referências
+## MVP Pendências (para fases futuras)
 
-- [Protótipos UI](./UI_prototype/) — Designs definitivos Stitch
-- [Tech Stack](./TECH_STACK.md) — Bibliotecas aprovadas
-- [UI/UX Plan](./UI_UX_PLAN.md) — Paleta Gruvbox e tokens
-- [Canvas Strategy](./CANVAS_STRATEGY.md) — Arquitetura do editor
-- [Data Models](./DATA_MODELS.md) — Schemas JSON
-- [AI Prompts](./AI_PROMPTS.md) — Prompts de geração
+| Funcionalidade | Status | Descrição |
+|----------------|--------|-----------|
+| Multi-andar | ⏳ | Navegação entre floors |
+| Export JSON/PNG | ⏳ | Exportar mapa completo |
+| Keyboard nav completa | ⏳ | Tab através de elementos |
+| Tablet sidebar collapse | ⏳ | Sidebar responsiva |
+
+---
+

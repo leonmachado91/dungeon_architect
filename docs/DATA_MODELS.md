@@ -13,7 +13,8 @@ interface Point {
 }
 
 interface Polygon {
-  points: Point[];  // Vértices do polígono
+  points: Point[];    // Vértices externos do polígono
+  holes?: Point[][];  // Buracos internos (opcional)
 }
 
 type Resolution = "512x512" | "1024x1024" | "2048x2048";
@@ -62,15 +63,20 @@ interface Floor {
 ## Spaces (Espaços)
 
 ```typescript
+type SpaceType = "room" | "corridor" | "stairs" | "outdoor";
+type Lighting = "dark" | "dim" | "bright" | "magical";
+
 interface Space {
   id: string;
   floorId: string;
   name: string;
   description: string;      // Lore para o mestre
   visualPrompt: string;     // Instrução pro render
-  geometry: Polygon;        // Polígono arbitrário
+  geometry: Polygon;        // Polígono arbitrário (pode ter buracos)
   zones: Zone[];            // Sub-áreas semânticas
-  lighting: "dark" | "dim" | "bright" | "magical";
+  lighting: Lighting;
+  spaceType: SpaceType;
+  floorType?: string;       // Tipo de piso opcional
 }
 
 interface Zone {
@@ -123,17 +129,29 @@ type EntityType =
   | "monster" 
   | "treasure" 
   | "hazard" 
-  | "interactive";
+  | "interactive"
+  | "door"          // Porta física
+  | "window"        // Janela
+  | "stairs"        // Escada visual
+  | "furniture"     // Mobília
+  | "wall_feature"; // Elemento de parede (tocha, quadro, etc.)
 
 interface Entity {
   id: string;
+  dungeonId: string;          // ID do dungeon pai
+  floorId: string;
   type: EntityType;
   name: string;
   description: string;
   position: Point;
-  floorId: string;
-  icon: string;             // Token/ícone (não renderizado pela IA)
+  icon: string;               // Token/ícone (não renderizado pela IA)
   interactionScript?: string;
+  // Campos opcionais do Inspector
+  coverImage?: string;
+  properties?: Record<string, string>;
+  linkedFloorId?: string;     // Para escadas entre andares
+  rotation?: number;
+  subtype?: string;
 }
 ```
 
