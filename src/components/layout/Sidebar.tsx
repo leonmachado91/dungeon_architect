@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { MaterialIcon } from "@/components/icons/MaterialIcon";
 import { generateMap } from "@/actions";
-import { convertToStoreDungeon } from "@/lib/dungeonConverter";
+
 import { useMapStore, useFloorEntities, useFloorSpaces } from "@/stores";
 import { findOverlappingPairs } from "@/lib/polygonMerge";
 import type { Entity, Resolution } from "@/types";
@@ -85,8 +85,7 @@ export function Sidebar() {
                 const result = await generateMap({ prompt, resolution });
 
                 if (result.success && result.data) {
-                    const dungeonMap = convertToStoreDungeon(result.data);
-                    setDungeon(dungeonMap);
+                    setDungeon(result.data);
                 } else {
                     setError(result.error ?? "Erro ao gerar estrutura.");
                 }
