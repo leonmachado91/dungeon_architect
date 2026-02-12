@@ -1,2 +1,2 @@
 export { generateMap } from "./generateMap";
-export { generateDungeonImage, renderFloor, renderFloorWithSkeleton } from "./generateImage";
+export { generateDungeonImage, renderFloorWithSkeleton } from "./generateImage";

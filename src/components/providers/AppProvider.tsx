@@ -105,8 +105,12 @@ export function AppProvider({ children }: AppProviderProps) {
             }
         };
 
-        // Tab = Navigate between elements
+        // Tab = Navigate between elements (only when canvas area is focused)
         if (e.key === "Tab") {
+            const activeEl = document.activeElement;
+            const isCanvasFocused = activeEl?.closest("[data-canvas]") !== null
+                || activeEl === document.body;
+            if (!isCanvasFocused) return; // let browser handle Tab normally
             e.preventDefault();
             const currentIndex = getCurrentIndex();
             if (e.shiftKey) {

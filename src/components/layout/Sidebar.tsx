@@ -97,11 +97,8 @@ export function Sidebar() {
         });
     };
 
-    const resolutionMap: Record<number, Resolution> = {
-        512: "512x512",
-        1024: "1024x1024",
-        2048: "2048x2048",
-    };
+    const resolutionSteps: Resolution[] = ["512x512", "1024x1024", "2048x2048"];
+    const resolutionIndex = resolutionSteps.indexOf(resolution);
 
     return (
         <aside className="w-80 bg-[var(--bg)] border-l border-[var(--yellow)]/15 flex flex-col shrink-0">
@@ -175,11 +172,11 @@ export function Sidebar() {
                                 </div>
                                 <input
                                     type="range"
-                                    min="512"
-                                    max="2048"
-                                    step="512"
-                                    value={parseInt(resolution)}
-                                    onChange={(e) => setResolution(resolutionMap[parseInt(e.target.value)])}
+                                    min="0"
+                                    max="2"
+                                    step="1"
+                                    value={resolutionIndex >= 0 ? resolutionIndex : 1}
+                                    onChange={(e) => setResolution(resolutionSteps[parseInt(e.target.value)])}
                                     className="w-full accent-[var(--yellow)]"
                                     disabled={isPending}
                                 />

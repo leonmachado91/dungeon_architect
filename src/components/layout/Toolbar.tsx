@@ -3,14 +3,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { MaterialIcon } from "@/components/icons/MaterialIcon";
-import { useMapStore, useCurrentFloor, useFloorSpaces, useFloorEntities, useDbSync, useSettingsStore } from "@/stores";
+import { useMapStore, useCurrentFloor, useFloorSpaces, useFloorEntities, useSettingsStore } from "@/stores";
 import { renderFloorWithSkeleton } from "@/actions/generateImage";
 import { renderSkeleton } from "@/lib/skeleton/renderer";
-import { SKELETON_DIMENSIONS } from "@/lib/skeleton/constants";
 import { buildRenderPrompt } from "@/lib/promptBuilder";
 import debug from "@/lib/debug";
-
-const CANVAS_SIZE = SKELETON_DIMENSIONS.CANVAS_SIZE;
 
 interface ToolButtonProps {
     active: boolean;
@@ -58,9 +55,6 @@ export function Toolbar() {
     const canRedo = futureStates.length > 0;
     const hasSelection = selectedSpaceId || selectedEntityId;
 
-    // Database sync for immediate save after undo/redo
-    const { saveDungeon } = useDbSync(dungeon?.meta.id);
-
     const currentFloor = useCurrentFloor();
     const spaces = useFloorSpaces();
     const floors = dungeon?.floors || [];
@@ -76,13 +70,11 @@ export function Toolbar() {
     const handleUndo = () => {
         undo();
         useMapStore.setState({ isDirty: true });
-        saveDungeon();
     };
 
     const handleRedo = () => {
         redo();
         useMapStore.setState({ isDirty: true });
-        saveDungeon();
     };
 
     // Get entities for the current floor
@@ -119,9 +111,6 @@ export function Toolbar() {
             const prompt = buildRenderPrompt({
                 dungeon,
                 floor: currentFloor,
-                entities,
-                width: CANVAS_SIZE,
-                height: CANVAS_SIZE,
             });
             debug.log("[Toolbar] Prompt generated, length:", prompt.length, "chars");
 
@@ -130,8 +119,6 @@ export function Toolbar() {
                 prompt,
                 skeletonBase64,
                 renderModel,
-                width: CANVAS_SIZE,
-                height: CANVAS_SIZE,
             });
             debug.log("[Toolbar] renderFloorWithSkeleton result:", result.success);
 
@@ -363,29 +350,31 @@ export function Toolbar() {
 
                 <div className="w-px h-6 bg-[var(--gray)]/30 mx-1" />
 
-                {/* Debug Controls */}
-                <div className="flex flex-col gap-1">
-                    <button
-                        className={`p-1 text-[10px] rounded uppercase font-bold tracking-wider px-2 transition-colors ${debugFit
-                            ? "bg-green-500/20 text-green-400 border border-green-500/50"
-                            : "bg-[var(--bg-soft)] text-[var(--fg-alt)] hover:text-[var(--fg)]"
-                            }`}
-                        onClick={() => setDebugFit(!debugFit)}
-                        title="Forçar ajuste ao World Bounds (1024x1024)"
-                    >
-                        Fix Size
-                    </button>
-                    <button
-                        className={`p-1 text-[10px] rounded uppercase font-bold tracking-wider px-2 transition-colors ${debugPlaceholder
-                            ? "bg-blue-500/20 text-blue-400 border border-blue-500/50"
-                            : "bg-[var(--bg-soft)] text-[var(--fg-alt)] hover:text-[var(--fg)]"
-                            }`}
-                        onClick={() => setDebugPlaceholder(!debugPlaceholder)}
-                        title="Usar Placeholder 2048x2048"
-                    >
-                        Test 2k
-                    </button>
-                </div>
+                {/* Debug Controls — only in development */}
+                {process.env.NODE_ENV === "development" && (
+                    <div className="flex flex-col gap-1">
+                        <button
+                            className={`p-1 text-[10px] rounded uppercase font-bold tracking-wider px-2 transition-colors ${debugFit
+                                ? "bg-green-500/20 text-green-400 border border-green-500/50"
+                                : "bg-[var(--bg-soft)] text-[var(--fg-alt)] hover:text-[var(--fg)]"
+                                }`}
+                            onClick={() => setDebugFit(!debugFit)}
+                            title="Forçar ajuste ao World Bounds (1024x1024)"
+                        >
+                            Fix Size
+                        </button>
+                        <button
+                            className={`p-1 text-[10px] rounded uppercase font-bold tracking-wider px-2 transition-colors ${debugPlaceholder
+                                ? "bg-blue-500/20 text-blue-400 border border-blue-500/50"
+                                : "bg-[var(--bg-soft)] text-[var(--fg-alt)] hover:text-[var(--fg)]"
+                                }`}
+                            onClick={() => setDebugPlaceholder(!debugPlaceholder)}
+                            title="Usar Placeholder 2048x2048"
+                        >
+                            Test 2k
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

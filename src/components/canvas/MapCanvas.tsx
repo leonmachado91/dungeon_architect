@@ -379,23 +379,13 @@ export function MapCanvas() {
         }
     }, [selectSpace, selectEntity, tool]);
 
-    // Export canvas to PNG
+    // Export canvas to PNG (uses world bounds for full map capture)
     const exportToPng = useCallback(() => {
         const stage = stageRef.current;
         if (!stage) return;
 
-        const dataUrl = stage.toDataURL({
-            pixelRatio: 2, // Higher quality
-            mimeType: "image/png",
-        });
-
-        // Trigger download
-        const link = document.createElement("a");
-        link.download = `dungeon-${Date.now()}.png`;
-        link.href = dataUrl;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        // Uses exportAsPng from lib/exportMap which captures full world bounds
+        import("@/lib/exportMap").then(({ exportAsPng }) => exportAsPng(stage));
     }, []);
 
     // Register export handler on mount
@@ -409,6 +399,7 @@ export function MapCanvas() {
             ref={containerRef}
             className="absolute inset-0 bg-[var(--bg-hard)]"
             onContextMenu={(e) => e.preventDefault()}
+            data-canvas
         >
             <Stage
                 ref={stageRef}

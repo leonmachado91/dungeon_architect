@@ -17,11 +17,11 @@ function MainLayout() {
       <div className="md:hidden fixed inset-0 z-50 bg-[var(--bg-hard)] flex flex-col items-center justify-center p-8 text-center">
         <MaterialIcon name="desktop_windows" size="lg" className="text-[var(--yellow)] mb-4" />
         <h1 className="text-xl font-serif text-[var(--fg)] mb-2">
-          Desktop Required
+          Tela Desktop Necessária
         </h1>
         <p className="text-[var(--fg-alt)] max-w-sm">
-          Dungeon Architect requires a desktop or tablet screen for the best experience.
-          Please access from a larger device.
+          O Dungeon Architect requer uma tela de desktop ou tablet para a melhor experiência.
+          Acesse de um dispositivo maior.
         </p>
       </div>
 
@@ -35,7 +35,7 @@ function MainLayout() {
           <main
             className="absolute inset-0 z-0"
             role="application"
-            aria-label="Dungeon map editor canvas"
+            aria-label="Canvas do editor de mapas"
           >
             <Canvas />
             <Toolbar />

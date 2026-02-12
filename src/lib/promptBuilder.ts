@@ -5,16 +5,13 @@
  * based on ROADMAP_POS_MVP.md Phase 6.6 template
  */
 
-import type { DungeonMap, Floor, Space, Entity } from "@/types";
+import type { DungeonMap, Floor } from "@/types";
 
 // === Prompt Template ===
 
 interface PromptBuildOptions {
     dungeon: DungeonMap;
     floor: Floor;
-    entities: Entity[];
-    width: number;
-    height: number;
 }
 
 /**
@@ -24,12 +21,7 @@ interface PromptBuildOptions {
 export function buildRenderPrompt({
     dungeon,
     floor,
-    entities,
-    width,
-    height,
 }: PromptBuildOptions): string {
-    const floorEntities = entities.filter((e) => e.floorId === floor.id);
-
     // Build areas section
     const areasSection = floor.spaces
         .map((space) => {
@@ -45,13 +37,6 @@ export function buildRenderPrompt({
         .join("\n");
 
     // Build entity positions for layout key
-    const layoutKey = floorEntities
-        .map((entity) => {
-            const x = Math.round(entity.position.x);
-            const y = Math.round(entity.position.y);
-            return `Position (${x},${y}): ${entity.name} - ${entity.description || entity.type}`;
-        })
-        .join("\n");
 
     // Full prompt using simplified structure for better adherence
     // Full prompt using simplified structure for better adherence
@@ -88,25 +73,6 @@ ${areasSection}`;
 export function estimateTokens(text: string): number {
     // Rough estimate: ~4 chars per token
     return Math.ceil(text.length / 4);
-}
-
-/**
- * Build a condensed prompt for simpler models
- */
-export function buildCondensedPrompt({
-    dungeon,
-    floor,
-    width,
-    height,
-}: Omit<PromptBuildOptions, "entities">): string {
-    const spaceNames = floor.spaces.map((s) => s.name).join(", ");
-
-    return `Create a top-down ${dungeon.meta.theme} dungeon map.
-Atmosphere: ${dungeon.meta.atmosphere}
-Areas: ${spaceNames}
-Style: Fantasy illustration, painterly, warm torchlight.
-Resolution: ${width}x${height}
-NO characters or creatures. Static objects only.`;
 }
 
 // === Prompt Variations ===
@@ -149,9 +115,6 @@ export function buildPromptWithStyle(
     const basePrompt = buildRenderPrompt(options);
     const styleSection = STYLE_PRESETS[style];
 
-    // Replace the style section
-    return basePrompt.replace(
-        /<style>[\s\S]*?<\/style>/,
-        `<style>\n${styleSection}\n</style>`
-    );
+    // Append style section to the prompt
+    return `${basePrompt}\n\nVisual Style:\n${styleSection}`;
 }

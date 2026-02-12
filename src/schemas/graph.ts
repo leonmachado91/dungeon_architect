@@ -22,7 +22,7 @@ export const GraphNodeSchema = z.object({
 export const GraphEdgeSchema = z.object({
     from: z.string().describe("Source node id"),
     to: z.string().describe("Target node id"),
-    type: z.enum(["door", "archway", "secret", "window", "stairs", "ladder", "portal"]),
+    type: z.enum(["door", "archway", "secret", "window", "stairs", "ladder", "rope", "portal"]),
     state: z.enum(["open", "closed", "locked", "hidden"]).default("closed"),
     material: z.string().optional().describe("e.g. 'iron', 'wood', 'stone'"),
 });
@@ -31,7 +31,7 @@ export const GraphEdgeSchema = z.object({
 
 export const GraphEntitySchema = z.object({
     id: z.string().describe("Unique id, e.g. 'entity-1'"),
-    type: z.enum(["npc", "monster", "treasure", "hazard", "interactive", "furniture"]),
+    type: z.enum(["npc", "monster", "treasure", "hazard", "interactive", "furniture", "wall_feature"]),
     name: z.string(),
     description: z.string().optional(),
     icon: z.string().default("person").describe(

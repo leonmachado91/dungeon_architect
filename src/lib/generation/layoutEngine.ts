@@ -23,8 +23,8 @@ const WALL_THICKNESS = 8;
 // Size mappings (in grid cells)
 const SIZE_MAP: Record<string, { w: number; h: number }> = {
     small: { w: 1, h: 1 },
-    medium: { w: 1, h: 1 },
-    large: { w: 2, h: 1 },
+    medium: { w: 2, h: 1 },
+    large: { w: 2, h: 2 },
 };
 
 // Pixel sizes per grid cell
@@ -147,6 +147,38 @@ function boundsToPolygon(b: { x: number; y: number; w: number; h: number }): Pol
 
 function boundsCenter(b: { x: number; y: number; w: number; h: number }): Point {
     return { x: b.x + b.w / 2, y: b.y + b.h / 2 };
+}
+
+/**
+ * Project a target point onto the border of a rectangle.
+ * Returns the point where the line from the rect center to the target
+ * intersects the rect edge.
+ */
+function projectToBorder(
+    b: { x: number; y: number; w: number; h: number },
+    target: Point,
+): Point {
+    const cx = b.x + b.w / 2;
+    const cy = b.y + b.h / 2;
+    const dx = target.x - cx;
+    const dy = target.y - cy;
+
+    if (dx === 0 && dy === 0) {
+        return { x: cx, y: b.y }; // fallback: top center
+    }
+
+    const hw = b.w / 2;
+    const hh = b.h / 2;
+
+    // Scale factor to reach the border
+    const sx = dx !== 0 ? hw / Math.abs(dx) : Infinity;
+    const sy = dy !== 0 ? hh / Math.abs(dy) : Infinity;
+    const s = Math.min(sx, sy);
+
+    return {
+        x: Math.round(cx + dx * s),
+        y: Math.round(cy + dy * s),
+    };
 }
 
 // === Adjacency Map ===
@@ -300,7 +332,6 @@ export function layoutGraph(graph: DungeonGraph): DungeonMap {
         });
     }
 
-    // Connections
     const connections: Connection[] = graph.edges.map((edge) => {
         const fromPlaced = placedMap.get(edge.from);
         const toPlaced = placedMap.get(edge.to);
@@ -308,17 +339,20 @@ export function layoutGraph(graph: DungeonGraph): DungeonMap {
         const fromCenter = fromPlaced ? boundsCenter(fromPlaced.bounds) : { x: 0, y: 0 };
         const toCenter = toPlaced ? boundsCenter(toPlaced.bounds) : { x: 0, y: 0 };
 
-        const midpoint: Point = {
-            x: Math.round((fromCenter.x + toCenter.x) / 2),
-            y: Math.round((fromCenter.y + toCenter.y) / 2),
-        };
+        // Calculate edge points: project midpoint onto each space's boundary
+        const fromEdge = fromPlaced
+            ? projectToBorder(fromPlaced.bounds, toCenter)
+            : fromCenter;
+        const toEdge = toPlaced
+            ? projectToBorder(toPlaced.bounds, fromCenter)
+            : toCenter;
 
         return {
             id: crypto.randomUUID(),
             dungeonId,
             type: edge.type,
-            from: { spaceId: nodeIdMap.get(edge.from) || edge.from, position: midpoint },
-            to: { spaceId: nodeIdMap.get(edge.to) || edge.to, position: midpoint },
+            from: { spaceId: nodeIdMap.get(edge.from) || edge.from, position: fromEdge },
+            to: { spaceId: nodeIdMap.get(edge.to) || edge.to, position: toEdge },
             state: edge.state,
             material: edge.material,
         };

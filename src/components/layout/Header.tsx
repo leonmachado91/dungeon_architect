@@ -72,7 +72,7 @@ export function Header() {
                                 onClick={handleExportJson}
                             >
                                 <MaterialIcon name="data_object" size="sm" className="text-[var(--teal)]" />
-                                Export JSON
+                                Exportar JSON
                             </button>
                             <button
                                 className="w-full px-3 py-2 text-left text-sm text-[var(--fg)] hover:bg-[var(--bg-soft)] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -80,7 +80,7 @@ export function Header() {
                                 disabled={!exportCanvas}
                             >
                                 <MaterialIcon name="image" size="sm" className="text-[var(--yellow)]" />
-                                Export PNG
+                                Exportar PNG
                             </button>
                         </div>
                     )}

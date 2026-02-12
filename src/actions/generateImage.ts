@@ -11,8 +11,6 @@ interface RenderFloorOptions {
     prompt: string;
     skeletonBase64: string; // Grayscale skeleton PNG as base64
     renderModel?: string;
-    width?: number;
-    height?: number;
 }
 
 interface GenerateImageResult {
@@ -186,24 +184,4 @@ export async function renderFloorWithSkeleton({
             error: error instanceof Error ? error.message : "Erro desconhecido ao gerar imagem",
         };
     }
-}
-
-// === Legacy: Simple render (without skeleton) ===
-
-export async function renderFloor(floorId: string, spaces: unknown[]): Promise<GenerateImageResult> {
-    debug.log("[renderFloor] Legacy render for floor:", floorId);
-    debug.warn("[renderFloor] This function is deprecated. Use renderFloorWithSkeleton instead.");
-
-    const spaceDescriptions = Array.isArray(spaces)
-        ? spaces.map((s: unknown) => {
-            const space = s as { name?: string; spaceType?: string; description?: string };
-            return `${space.spaceType || 'room'}: ${space.name || 'unnamed'}`;
-        }).join(", ")
-        : "empty floor";
-
-    const prompt = `A dungeon floor with the following spaces: ${spaceDescriptions}. 
-The layout should show connected rooms and corridors with stone walls and wooden/stone floors.
-Include torches, shadows, and atmospheric medieval dungeon lighting.`;
-
-    return generateDungeonImage({ prompt, style: "fantasy" });
 }
