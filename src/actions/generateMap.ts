@@ -5,7 +5,7 @@ import { google } from "@ai-sdk/google";
 import { z } from "zod";
 import { BlockGridSchema, BlockEntitySchema, applyBlockDefaults } from "@/schemas/blockGrid";
 import { layoutBlockGrid } from "@/lib/generation/layoutEngine";
-import { MODEL_IDS } from "@/lib/models";
+import { DEFAULT_MODELS } from "@/lib/models";
 import type { GridSize } from "@/constants/core";
 
 // ============================================================
@@ -141,7 +141,7 @@ export async function generateMap({
     modelId,
 }: GenerateMapOptions) {
     try {
-        const model = google(modelId || MODEL_IDS.GEMINI_2_0_FLASH);
+        const model = google(modelId || DEFAULT_MODELS.structure);
 
         // === PHASE 1: Structure Generation ===
         console.log("[generateMap] Phase 1: Generating structure...");

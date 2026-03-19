@@ -7,7 +7,7 @@ import { MaterialIcon } from "@/components/icons/MaterialIcon";
 import { generateMap } from "@/actions";
 import { BLOCK_GRID, type GridSize } from "@/constants/core";
 
-import { useMapStore, useFloorEntities, useFloorSpaces } from "@/stores";
+import { useMapStore, useFloorEntities, useFloorSpaces, useSettingsStore } from "@/stores";
 import { findOverlappingPairs } from "@/lib/polygonMerge";
 import type { Entity, Resolution } from "@/types";
 
@@ -27,6 +27,7 @@ export function Sidebar() {
     const selectedEntityId = useMapStore((s) => s.selectedEntityId);
     const addEntity = useMapStore((s) => s.addEntity);
     const mergeSpaces = useMapStore((s) => s.mergeSpaces);
+    const structureModel = useSettingsStore((s) => s.structureModel);
     const currentFloor = dungeon?.floors[0];
     const spaces = useFloorSpaces();
     const selectedSpace = currentFloor?.spaces.find(s => s.id === selectedSpaceId);
@@ -84,7 +85,7 @@ export function Sidebar() {
 
         startTransition(async () => {
             try {
-                const result = await generateMap({ prompt, resolution, gridSize });
+                const result = await generateMap({ prompt, resolution, gridSize, modelId: structureModel });
 
                 if (result.success && result.data) {
                     setDungeon(result.data);
