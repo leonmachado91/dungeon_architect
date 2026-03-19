@@ -1,5 +1,7 @@
 "use server";
 
+export const maxDuration = 60; // Increase Netlify serverless function timeout from default 10s to 60s
+
 import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
