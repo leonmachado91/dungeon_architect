@@ -2,6 +2,10 @@ import { DungeonMap, Space, Entity } from '@/types/dungeon';
 import { SKELETON_COLORS, SKELETON_DIMENSIONS } from './constants';
 import { drawEntityShape } from './shapes';
 
+// === Structural entity types (drawn on skeleton) ===
+// Dynamic entities (npc, monster, treasure, etc.) are excluded
+const STRUCTURAL_ENTITY_TYPES = new Set(['door', 'window', 'wall_feature', 'stairs']);
+
 // === Semantic Texture Patterns ===
 
 /**
@@ -74,6 +78,19 @@ function createWallPattern(ctx: CanvasRenderingContext2D): CanvasPattern | strin
     return ctx.createPattern(patternCanvas, 'repeat') || SKELETON_COLORS.WALL;
 }
 
+// === Geometry Helpers ===
+
+/** Calculate centroid of a polygon */
+function getCentroid(points: { x: number; y: number }[]): { x: number; y: number } {
+    let cx = 0;
+    let cy = 0;
+    for (const p of points) {
+        cx += p.x;
+        cy += p.y;
+    }
+    return { x: cx / points.length, y: cy / points.length };
+}
+
 // === Main Renderer ===
 
 /**
@@ -122,8 +139,26 @@ export async function renderSkeleton(dungeon: DungeonMap, floorId: string): Prom
         drawSpaceFloor(ctx, space, offsetX, offsetY, floorPattern);
     });
 
-    // 3. Desenhar Entidades (Portas, Janelas, Escadas)
-    const floorEntities = dungeon.entities.filter(e => e.floorId === floorId);
+    // Pass 3: Inner space borders — dashed inset for child spaces
+    floor.spaces.forEach(space => {
+        if (space.parentId) {
+            drawInnerBorder(ctx, space, offsetX, offsetY);
+        }
+    });
+
+    // Pass 4: Space name labels — centered at polygon centroid
+    ctx.font = SKELETON_DIMENSIONS.LABEL_FONT;
+    ctx.fillStyle = SKELETON_COLORS.TEXT;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    floor.spaces.forEach(space => {
+        drawSpaceLabel(ctx, space, offsetX, offsetY);
+    });
+
+    // 5. Desenhar Entidades ESTRUTURAIS apenas (portas, janelas, escadas)
+    const floorEntities = dungeon.entities.filter(
+        e => e.floorId === floorId && STRUCTURAL_ENTITY_TYPES.has(e.type)
+    );
 
     floorEntities.forEach(entity => {
         drawEntity(ctx, entity, offsetX, offsetY);
@@ -173,6 +208,59 @@ function drawSpaceFloor(
 
     ctx.fillStyle = pattern;
     ctx.fill();
+}
+
+/** Draw a dashed inset border around inner (child) spaces */
+function drawInnerBorder(
+    ctx: CanvasRenderingContext2D,
+    space: Space,
+    offX: number,
+    offY: number,
+) {
+    if (!space.geometry || space.geometry.points.length < 3) return;
+
+    ctx.save();
+    ctx.setLineDash([8, 4]);
+    ctx.strokeStyle = SKELETON_COLORS.INNER_BORDER;
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+    const points = space.geometry.points;
+    ctx.moveTo(points[0].x + offX, points[0].y + offY);
+    for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x + offX, points[i].y + offY);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+}
+
+/** Draw space name label at centroid */
+function drawSpaceLabel(
+    ctx: CanvasRenderingContext2D,
+    space: Space,
+    offX: number,
+    offY: number,
+) {
+    if (!space.geometry || space.geometry.points.length < 3) return;
+
+    const centroid = getCentroid(space.geometry.points);
+    const x = centroid.x + offX;
+    const y = centroid.y + offY;
+
+    // Draw a white background behind the text for readability
+    const text = space.name;
+    const metrics = ctx.measureText(text);
+    const padding = 3;
+    const bgWidth = metrics.width + padding * 2;
+    const bgHeight = 18;
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.fillRect(x - bgWidth / 2, y - bgHeight / 2, bgWidth, bgHeight);
+    ctx.fillStyle = SKELETON_COLORS.TEXT;
+    ctx.fillText(text, x, y);
+    ctx.restore();
 }
 
 function drawEntity(ctx: CanvasRenderingContext2D, entity: Entity, offX: number, offY: number) {

@@ -2,66 +2,217 @@
 
 import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
-import { DungeonGraphSchema } from "@/schemas/graph";
-import { layoutGraph } from "@/lib/generation/layoutEngine";
+import { z } from "zod";
+import { BlockGridSchema, BlockEntitySchema, applyBlockDefaults } from "@/schemas/blockGrid";
+import { layoutBlockGrid } from "@/lib/generation/layoutEngine";
 import { MODEL_IDS } from "@/lib/models";
+import type { GridSize } from "@/constants/core";
 
-// === System Prompt: Topology-Only Generation ===
+// ============================================================
+// PHASE 1: Structure-Only Prompt
+// Focus: spatial layout, exits, block placement — no lore/detail
+// ============================================================
 
-const GRAPH_SYSTEM_PROMPT = `You are a master dungeon architect for tabletop RPGs.
-Your task is to design the TOPOLOGY (rooms, connections, atmosphere) of a dungeon.
+function buildStructureSystemPrompt(gridSize: number): string {
+    return `You are a master dungeon/location architect for tabletop RPGs (D&D, Pathfinder).
+You design locations by placing BLOCKS on a ${gridSize}×${gridSize} GRID.
 
-CRITICAL RULES:
-1. You output a GRAPH — nodes (rooms/corridors) and edges (connections). NO coordinates.
-2. Every node must be reachable from at least one other node (connected graph).
-3. Corridors should connect rooms logically. Avoid isolated clusters.
-4. Use "size" to indicate relative room size: small, medium, or large.
-5. Include at least 1-2 entities (monsters, treasures, NPCs, furniture) per room.
-6. Entity "roomId" must match a valid node "id".
-7. Entity "placement" hints where to put it: center, corner, wall, or entrance.
-8. descriptions and visualPrompts should be atmospheric and theme-appropriate.
-9. The graph should tell a spatial story: entrance → challenges → climax → reward.`;
+YOUR ONLY TASK: Generate the PHYSICAL STRUCTURE. Do NOT write descriptions, visual prompts, or entities.
 
-// === Main Generation Function ===
+## GRID RULES
+- Coordinates are 0-indexed: (0,0) is top-left, (${gridSize - 1},${gridSize - 1}) is bottom-right.
+- Each block occupies a rectangle defined by: col, row, width, height.
+- A block at col=2, row=3, width=3, height=2 occupies cells (2,3) through (4,4).
+- Blocks MUST NOT overlap. Before placing each block, mentally verify the cells are free.
+- Blocks MUST stay within grid bounds: col+width ≤ ${gridSize}, row+height ≤ ${gridSize}.
 
-interface GenerateMapOptions {
-    prompt: string;
-    resolution?: "512x512" | "1024x1024" | "2048x2048";
-    modelId?: string;
+## BLOCK TYPES
+- type: "room" (enclosed space), "corridor" (narrow passage), "stairs" (level transition), "outdoor" (open area)
+
+## ROLES (choose the most fitting)
+- entrance: Entry point. Usually 1×2 or 2×2. Place near a grid edge.
+- hub: Central connecting room. Larger (3×3 to 4×4). Multiple exits.
+- support: Side rooms (armory, library, cells). Medium size, 2×2 to 3×2.
+- secret: Hidden areas. Usually small (1×1 or 2×1), accessed via "secret" exit type.
+- climax: Boss room, treasure vault, ritual chamber. Large and dramatic.
+- corridor: Narrow passage (1×N or N×1) connecting areas.
+- open: Generic room, no special shape treatment.
+- container: Large area (forest, marketplace, arena) that contains sub-spaces.
+
+## EXITS — CRITICAL
+- Every exit MUST have a reciprocal on the target block.
+- If block A has exit {side:"east", to:"B"}, then block B MUST have exit {side:"west", to:"A"}.
+- Matching sides: north↔south, east↔west.
+- Place exits on the side that faces the connected block.
+- Exit types: door, archway, secret, stairs, ladder, window.
+- Exit state: "open", "closed", "locked", or "hidden". If omitted, defaults to "closed".
+
+## ORGANIC SHAPES
+- smoothing (0 to 1): Wall curvature. 0=geometric, 1=organic curves.
+- noiseAmount (0 to 1): Wall irregularity. 0=smooth, 0.8=natural rock.
+- Built structures: smoothing=0, noiseAmount=0
+- Natural caves: smoothing=0.8, noiseAmount=0.6
+- If omitted, both default to 0 (geometric).
+
+## SPATIAL FLOW
+- Design a spatial story: entrance → exploration → challenges → climax.
+- Vary block sizes. Use branching paths and hidden areas.
+
+## WHAT TO OUTPUT
+- name, theme, atmosphere, gridSize, and blocks with id, name, type, role, col, row, width, height, exits, lighting, floorType, smoothing, noiseAmount, parentId.
+- Do NOT output description, visualPrompt, or entities.`;
 }
 
-export async function generateMap({ prompt, resolution = "1024x1024", modelId }: GenerateMapOptions) {
-    try {
-        // --- Step 1: LLM generates abstract graph (no coordinates) ---
-
-        const graphResult = await generateObject({
-            model: google(modelId || MODEL_IDS.GEMINI_2_0_FLASH),
-            schema: DungeonGraphSchema,
-            system: GRAPH_SYSTEM_PROMPT,
-            prompt: `Design a dungeon based on this description:
+function buildStructureUserPrompt(prompt: string, gridSize: number): string {
+    const roomRange = gridSize === 6 ? "3-6" : gridSize === 8 ? "5-8" : "6-12";
+    return `Design a location based on this description:
 
 ${prompt}
 
 Requirements:
-- Generate between 4 and 10 rooms/corridors.
-- Include logical connections (doors, archways, secret passages).
-- Add thematic entities (NPCs, monsters, treasures, interactive objects, furniture).
-- Make it spatially interesting — branching paths, dead ends, hidden areas.`,
+- Use the ${gridSize}×${gridSize} grid.
+- Generate ${roomRange} blocks (rooms, corridors, areas).
+- Include logical connections with appropriate door/archway/secret types.
+- Every exit must have a matching reciprocal exit on the target block.
+- gridSize must be ${gridSize}.
+- ONLY the physical structure. No descriptions, visual prompts, or entities.`;
+}
+
+// ============================================================
+// PHASE 2: Lore & Detail Population
+// Focus: descriptions, visual prompts, entities
+// ============================================================
+
+const BlockDetailSchema = z.object({
+    id: z.string().describe("Must match an existing block id from Phase 1"),
+    description: z.string().describe("Vivid atmospheric description — mood, senses, notable details"),
+    visualPrompt: z.string().describe("Visual rendering instructions — materials, objects, colors, atmosphere"),
+    entities: z.array(BlockEntitySchema).optional().describe("Thematic entities for this block"),
+});
+
+const DetailOutputSchema = z.object({
+    blocks: z.array(BlockDetailSchema).describe("Detail entries, one per block — must match block IDs from structure"),
+});
+
+function buildDetailSystemPrompt(): string {
+    return `You are a master world-builder and lorecrafter for tabletop RPGs.
+
+You received a STRUCTURE generated by an architect. Your task:
+1. Write a vivid atmospheric DESCRIPTION for each block (mood, senses, notable features).
+2. Write a VISUAL PROMPT for each block (rendering instructions: materials, textures, objects, lighting).
+3. Add thematic ENTITIES to appropriate blocks (NPCs, monsters, treasures, furniture, hazards).
+
+## ENTITY RULES
+- type: npc, monster, treasure, hazard, interactive, furniture, wall_feature
+- position: center, corner, wall, entrance
+- 1-3 entities per room. Boss entities go in climax rooms.
+
+## OUTPUT
+- For each block, output: id (matching the structure), description, visualPrompt, entities.
+- Do NOT change block positions, exits, or structural data.`;
+}
+
+function buildDetailUserPrompt(structureJson: string): string {
+    return `Here is the dungeon structure to populate with lore and detail:
+
+${structureJson}
+
+For EVERY block, write:
+1. A vivid description (what you see, hear, smell, feel)
+2. A visual prompt (for an AI renderer — materials, objects, atmosphere)
+3. Thematic entities (NPCs, monsters, treasures, furniture)`;
+}
+
+// ============================================================
+// Main Generation — Two-Phase Orchestration
+// ============================================================
+
+interface GenerateMapOptions {
+    prompt: string;
+    resolution?: "512x512" | "1024x1024" | "2048x2048";
+    gridSize?: GridSize;
+    modelId?: string;
+}
+
+export async function generateMap({
+    prompt,
+    resolution = "1024x1024",
+    gridSize = 8,
+    modelId,
+}: GenerateMapOptions) {
+    try {
+        const model = google(modelId || MODEL_IDS.GEMINI_2_0_FLASH);
+
+        // === PHASE 1: Structure Generation ===
+        console.log("[generateMap] Phase 1: Generating structure...");
+        const structureResult = await generateObject({
+            model,
+            schema: BlockGridSchema,
+            system: buildStructureSystemPrompt(gridSize),
+            prompt: buildStructureUserPrompt(prompt, gridSize),
         });
 
-        const graph = graphResult.object;
+        const structureGrid = applyBlockDefaults(structureResult.object);
+        console.log("[generateMap] Phase 1 complete:", structureGrid.blocks.length, "blocks");
 
-        // --- Step 2: Deterministic layout engine converts graph → geometry ---
+        // === PHASE 2: Lore & Detail Population ===
+        console.log("[generateMap] Phase 2: Populating details...");
+        const structureContext = JSON.stringify({
+            name: structureGrid.name,
+            theme: structureGrid.theme,
+            atmosphere: structureGrid.atmosphere,
+            blocks: structureGrid.blocks.map(b => ({
+                id: b.id,
+                name: b.name,
+                type: b.type,
+                role: b.role,
+                lighting: b.lighting,
+                floorType: b.floorType,
+            })),
+        }, null, 2);
 
-        const dungeonMap = layoutGraph(graph);
+        const detailResult = await generateObject({
+            model,
+            schema: DetailOutputSchema,
+            system: buildDetailSystemPrompt(),
+            prompt: buildDetailUserPrompt(structureContext),
+        });
 
-        // Apply resolution override
+        // Merge Phase 2 details into Phase 1 structure
+        const detailMap = new Map(
+            detailResult.object.blocks.map(d => [d.id, d])
+        );
+
+        const mergedGrid = {
+            ...structureGrid,
+            blocks: structureGrid.blocks.map(block => {
+                const detail = detailMap.get(block.id);
+                if (!detail) return block;
+                return {
+                    ...block,
+                    description: detail.description || block.description,
+                    visualPrompt: detail.visualPrompt || block.visualPrompt,
+                    entities: detail.entities?.length
+                        ? (detail.entities || []).map(e => ({
+                            ...e,
+                            icon: e.icon || "person",
+                            position: e.position || "center" as const,
+                        }))
+                        : block.entities,
+                };
+            }),
+        };
+
+        console.log("[generateMap] Phase 2 complete — details merged");
+
+        // === Layout Engine ===
+        const dungeonMap = layoutBlockGrid(mergedGrid, { resolution });
         dungeonMap.meta.resolution = resolution;
 
         return {
             success: true,
             data: dungeonMap,
-            graph, // expose graph for debugging
+            blockGrid: mergedGrid,
         };
     } catch (error) {
         console.error("[generateMap] Error:", error);

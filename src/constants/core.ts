@@ -74,3 +74,23 @@ export const COLORS = {
         DRAW_PREVIEW_STROKE: "#CC241D",
     }
 } as const;
+
+/** Block-Grid Engine configuration */
+export const BLOCK_GRID = {
+    DEFAULT_GRID_SIZE: 8,
+    GRID_PADDING: 20,
+    MIN_BLOCKS: 3,
+    MAX_BLOCKS: 20,
+    CORRIDOR_WIDTH_PX: 40,
+    // Shape Grammar
+    CHAMFER_RATIO: 0.15,
+    CUT_CORNER_RATIO: 0.3,
+    // Organic refinement
+    CHAIKIN_ITERATIONS: 2,
+    NOISE_FREQUENCY: 0.05,
+    NOISE_MAX_OFFSET_PX: 12,
+    // Grid size options
+    GRID_SIZE_OPTIONS: [6, 8, 10] as const,
+} as const;
+
+export type GridSize = typeof BLOCK_GRID.GRID_SIZE_OPTIONS[number];

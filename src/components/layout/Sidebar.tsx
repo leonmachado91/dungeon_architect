@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { MaterialIcon } from "@/components/icons/MaterialIcon";
 import { generateMap } from "@/actions";
+import { BLOCK_GRID, type GridSize } from "@/constants/core";
 
 import { useMapStore, useFloorEntities, useFloorSpaces } from "@/stores";
 import { findOverlappingPairs } from "@/lib/polygonMerge";
@@ -14,6 +15,7 @@ export function Sidebar() {
     const [activeTab, setActiveTab] = useState("prompt");
     const [prompt, setPrompt] = useState("");
     const [resolution, setResolution] = useState<Resolution>("1024x1024");
+    const [gridSize, setGridSize] = useState<GridSize>(8);
     const [error, setError] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
 
@@ -82,7 +84,7 @@ export function Sidebar() {
 
         startTransition(async () => {
             try {
-                const result = await generateMap({ prompt, resolution });
+                const result = await generateMap({ prompt, resolution, gridSize });
 
                 if (result.success && result.data) {
                     setDungeon(result.data);
@@ -160,8 +162,36 @@ export function Sidebar() {
                                 </div>
                             )}
 
-                            {/* Resolution Slider */}
+                            {/* Grid Size Slider */}
                             <div className="pt-6">
+                                <div className="flex justify-between items-center mb-2">
+                                    <label className="text-xs uppercase tracking-wide text-[var(--fg-alt)] font-semibold">
+                                        Grid
+                                    </label>
+                                    <span className="text-[var(--yellow)] font-semibold text-sm">
+                                        {gridSize}×{gridSize}
+                                    </span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="2"
+                                    step="1"
+                                    value={BLOCK_GRID.GRID_SIZE_OPTIONS.indexOf(gridSize)}
+                                    onChange={(e) => setGridSize(BLOCK_GRID.GRID_SIZE_OPTIONS[parseInt(e.target.value)])}
+                                    className="w-full accent-[var(--yellow)]"
+                                    disabled={isPending}
+                                    aria-label="Tamanho do grid"
+                                />
+                                <div className="flex justify-between text-xs text-[var(--gray)] mt-1">
+                                    <span>Simples</span>
+                                    <span>Padrão</span>
+                                    <span>Detalhado</span>
+                                </div>
+                            </div>
+
+                            {/* Resolution Slider */}
+                            <div className="pt-4">
                                 <div className="flex justify-between items-center mb-2">
                                     <label className="text-xs uppercase tracking-wide text-[var(--fg-alt)] font-semibold">
                                         Resolução

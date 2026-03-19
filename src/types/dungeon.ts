@@ -73,6 +73,10 @@ export interface Space {
     staticObjects?: string;
     coverImage?: string;
     notes?: string;
+    // Organic shape metadata (set by engine, editable post-generation)
+    smoothing?: number;
+    noiseAmount?: number;
+    parentId?: string;
 }
 
 export interface Zone {

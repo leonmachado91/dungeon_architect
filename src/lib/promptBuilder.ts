@@ -49,6 +49,8 @@ Input Mask Definitions (Hex Codes + Textures):
 - #FFFFFF (White) with subtle dot grid: Walkable Floor Space — dot pattern indicates open area
 - #666666 (Medium Gray): Doors/Connections — flat gray rectangles between rooms
 - #999999 (Light Gray): Windows — flat gray on wall edges
+- #AAAAAA (Dashed border): Sub-space boundaries within larger areas
+- Black text labels on white floor: Room/area names — match these to the "Areas to render" section below
 
 Strict Constraints:
 1. Perspective: Top-down only (plan view).

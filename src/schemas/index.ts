@@ -1,2 +1,2 @@
 export * from "./dungeon";
-export * from "./graph";
+export * from "./blockGrid";

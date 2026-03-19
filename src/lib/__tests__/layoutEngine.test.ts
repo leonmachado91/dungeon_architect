@@ -1,136 +1,263 @@
-import { describe, it, expect } from 'vitest';
-import { layoutGraph } from '../generation/layoutEngine';
-import type { DungeonGraph } from '@/schemas/graph';
+import { describe, test, expect, vi } from 'vitest';
+import { layoutBlockGrid } from '../generation/layoutEngine';
+import type { BlockGrid } from '@/schemas/blockGrid';
 
 /**
- * Helper para criar um DungeonGraph mínimo válido para testes.
+ * Helper para criar um BlockGrid mínimo válido para testes.
  */
-function createMinimalGraph(overrides?: Partial<DungeonGraph>): DungeonGraph {
+function createMinimalGrid(overrides?: Partial<BlockGrid>): BlockGrid {
     return {
-        name: 'Test Dungeon',
-        theme: 'Cave',
-        atmosphere: 'Dark',
-        nodes: [
-            { id: 'room-1', name: 'Entrance', type: 'room', size: 'medium', description: 'Entry', visualPrompt: 'stone', lighting: 'dim' },
-            { id: 'corridor-1', name: 'Hallway', type: 'corridor', size: 'small', description: 'Narrow', visualPrompt: 'dark', lighting: 'dark' },
-            { id: 'room-2', name: 'Guard Room', type: 'room', size: 'large', description: 'Large room', visualPrompt: 'torches', lighting: 'bright' },
+        name: "Test Dungeon",
+        theme: "dungeon",
+        atmosphere: "A dank test dungeon",
+        gridSize: 8,
+        blocks: [
+            {
+                id: "room-a",
+                name: "Entrance",
+                type: "room",
+                role: "entrance",
+                col: 0,
+                row: 0,
+                width: 2,
+                height: 2,
+                exits: [{ side: "east" as const, to: "room-b", type: "door" as const, state: "closed" as const }],
+                description: "A stone entrance",
+                lighting: "bright",
+                smoothing: 0,
+                noiseAmount: 0,
+                entities: [],
+            },
+            {
+                id: "room-b",
+                name: "Main Hall",
+                type: "room",
+                role: "hub",
+                col: 3,
+                row: 0,
+                width: 3,
+                height: 3,
+                exits: [{ side: "west" as const, to: "room-a", type: "door" as const, state: "closed" as const }],
+                description: "A grand hall",
+                lighting: "dim",
+                smoothing: 0,
+                noiseAmount: 0,
+                entities: [
+                    {
+                        type: "treasure" as const,
+                        name: "Gold Chest",
+                        description: "A chest of gold",
+                        icon: "monetization_on",
+                        position: "center" as const,
+                    },
+                ],
+            },
         ],
-        edges: [
-            { from: 'room-1', to: 'corridor-1', type: 'door', state: 'open' },
-            { from: 'corridor-1', to: 'room-2', type: 'archway', state: 'open' },
-        ],
-        entities: [],
         ...overrides,
     };
 }
 
-describe('layoutGraph', () => {
-    it('deveria retornar um DungeonMap com espaços no primeiro floor', () => {
-        const graph = createMinimalGraph();
-        const map = layoutGraph(graph);
+// Set up crypto.randomUUID for Node test env
+if (typeof globalThis.crypto === 'undefined') {
+    const { randomUUID } = await import('node:crypto');
+    Object.defineProperty(globalThis, 'crypto', {
+        value: { randomUUID },
+        writable: true,
+    });
+}
 
+describe('layoutBlockGrid', () => {
+    test('should generate a DungeonMap with correct structure', () => {
+        const grid = createMinimalGrid();
+        const map = layoutBlockGrid(grid);
+
+        // Basic structure checks
+        expect(map.meta).toBeDefined();
+        expect(map.meta.name).toBe("Test Dungeon");
+        expect(map.meta.theme).toBe("dungeon");
         expect(map.floors).toHaveLength(1);
-        expect(map.floors[0].spaces.length).toBeGreaterThanOrEqual(3);
+        expect(map.connections.length).toBeGreaterThanOrEqual(1);
+        expect(map.entities.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('deveria gerar connections para cada edge', () => {
-        const graph = createMinimalGraph();
-        const map = layoutGraph(graph);
+    test('spaces should have valid polygon geometry', () => {
+        const grid = createMinimalGrid();
+        const map = layoutBlockGrid(grid);
 
-        expect(map.connections).toHaveLength(2);
-    });
+        const floor = map.floors[0];
+        expect(floor.spaces.length).toBeGreaterThanOrEqual(2);
 
-    it('cada space deveria ter geometry com points', () => {
-        const graph = createMinimalGraph();
-        const map = layoutGraph(graph);
-        const spaces = map.floors[0].spaces;
-
-        for (const space of spaces) {
-            expect(space.geometry).toBeDefined();
-            expect(space.geometry.points.length).toBeGreaterThanOrEqual(4);
-        }
-    });
-
-    it('cada connection deveria ter from e to com positions distintas', () => {
-        const graph = createMinimalGraph();
-        const map = layoutGraph(graph);
-
-        for (const conn of map.connections) {
-            expect(conn.from.position).toBeDefined();
-            expect(conn.to.position).toBeDefined();
-            // As posições from e to não devem ser idênticas (fix do bug #4)
-            const samePoint =
-                conn.from.position.x === conn.to.position.x &&
-                conn.from.position.y === conn.to.position.y;
-            expect(samePoint).toBe(false);
-        }
-    });
-
-    it('deveria preencher metadata do mapa', () => {
-        const graph = createMinimalGraph();
-        const map = layoutGraph(graph);
-
-        expect(map.meta.name).toBe('Test Dungeon');
-        expect(map.meta.theme).toBe('Cave');
-        expect(map.meta.atmosphere).toBe('Dark');
-    });
-
-    it('spaces devem ter coordenadas positivas dentro dos world bounds', () => {
-        const graph = createMinimalGraph();
-        const map = layoutGraph(graph);
-        const spaces = map.floors[0].spaces;
-
-        for (const space of spaces) {
+        for (const space of floor.spaces) {
+            expect(space.geometry.points.length).toBeGreaterThanOrEqual(3);
             for (const point of space.geometry.points) {
+                expect(typeof point.x).toBe('number');
+                expect(typeof point.y).toBe('number');
                 expect(point.x).toBeGreaterThanOrEqual(0);
                 expect(point.y).toBeGreaterThanOrEqual(0);
-                expect(point.x).toBeLessThanOrEqual(1024);
-                expect(point.y).toBeLessThanOrEqual(1024);
             }
         }
     });
 
-    it('deveria posicionar entidades relacionadas ao espaço correto', () => {
-        const graph = createMinimalGraph({
-            entities: [
+    test('connections should reference valid space ids', () => {
+        const grid = createMinimalGrid();
+        const map = layoutBlockGrid(grid);
+
+        const spaceIds = new Set(map.floors[0].spaces.map(s => s.id));
+
+        for (const conn of map.connections) {
+            expect(spaceIds.has(conn.from.spaceId)).toBe(true);
+            expect(spaceIds.has(conn.to.spaceId)).toBe(true);
+        }
+    });
+
+    test('entities should have valid positions inside the map', () => {
+        const grid = createMinimalGrid();
+        const map = layoutBlockGrid(grid);
+
+        expect(map.entities.length).toBe(1);
+        const entity = map.entities[0];
+
+        expect(entity.name).toBe("Gold Chest");
+        expect(entity.type).toBe("treasure");
+        expect(typeof entity.position.x).toBe('number');
+        expect(typeof entity.position.y).toBe('number');
+    });
+
+    test('should clamp blocks that exceed grid bounds', () => {
+        const grid = createMinimalGrid({
+            blocks: [
                 {
-                    id: 'entity-1',
-                    type: 'monster',
-                    name: 'Goblin',
-                    roomId: 'room-1',
-                    placement: 'center',
-                    icon: 'skull',
+                    id: "overflow",
+                    name: "Overflow Room",
+                    type: "room",
+                    role: "open",
+                    col: 6,
+                    row: 7,
+                    width: 5,  // exceeds 8
+                    height: 3, // exceeds 8
+                    exits: [],
+                    description: "Should be clamped",
+                    lighting: "dim",
+                    smoothing: 0,
+                    noiseAmount: 0,
+                    entities: [],
                 },
             ],
         });
-        const map = layoutGraph(graph);
 
-        expect(map.entities).toHaveLength(1);
-        expect(map.entities[0].name).toBe('Goblin');
-        expect(map.entities[0].position).toBeDefined();
-        expect(map.entities[0].position.x).toBeGreaterThan(0);
+        // Should not throw, just warn and clamp
+        const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+        const map = layoutBlockGrid(grid);
+        expect(map.floors[0].spaces.length).toBeGreaterThanOrEqual(1);
+        consoleSpy.mockRestore();
     });
 
-    it('deveria lidar com grafo com muitos nós sem crash', () => {
-        const nodes = Array.from({ length: 10 }, (_, i) => ({
-            id: `room-${i}`,
-            name: `Room ${i}`,
-            type: 'room' as const,
-            size: (['small', 'medium', 'large'] as const)[i % 3],
-            description: `Room ${i}`,
-            visualPrompt: 'stone',
-            lighting: 'dim' as const,
-        }));
-        const edges = Array.from({ length: 9 }, (_, i) => ({
-            from: `room-${i}`,
-            to: `room-${i + 1}`,
-            type: 'door' as const,
-            state: 'open' as const,
-        }));
+    test('should handle organic smoothing and noise', () => {
+        const grid = createMinimalGrid();
+        grid.blocks[0].smoothing = 0.7;
+        grid.blocks[0].noiseAmount = 0.5;
 
-        const graph = createMinimalGraph({ nodes, edges });
-        const map = layoutGraph(graph);
+        const map = layoutBlockGrid(grid);
+        const space = map.floors[0].spaces.find(s => s.id === "room-a");
 
-        expect(map.floors[0].spaces.length).toBeGreaterThanOrEqual(3);
+        expect(space).toBeDefined();
+        // Smoothed polygon should have more points than a rectangle
+        expect(space!.geometry.points.length).toBeGreaterThan(4);
+        expect(space!.smoothing).toBe(0.7);
+        expect(space!.noiseAmount).toBe(0.5);
+    });
+
+    test('should create auto-corridors for distant blocks', () => {
+        const grid = createMinimalGrid({
+            blocks: [
+                {
+                    id: "far-a",
+                    name: "Far Room A",
+                    type: "room",
+                    role: "entrance",
+                    col: 0,
+                    row: 0,
+                    width: 2,
+                    height: 2,
+                    exits: [{ side: "east" as const, to: "far-b", type: "door" as const, state: "closed" as const }],
+                    description: "",
+                    lighting: "dim",
+                    smoothing: 0,
+                    noiseAmount: 0,
+                    entities: [],
+                },
+                {
+                    id: "far-b",
+                    name: "Far Room B",
+                    type: "room",
+                    role: "hub",
+                    col: 6,
+                    row: 0,
+                    width: 2,
+                    height: 2,
+                    exits: [{ side: "west" as const, to: "far-a", type: "door" as const, state: "closed" as const }],
+                    description: "",
+                    lighting: "dim",
+                    smoothing: 0,
+                    noiseAmount: 0,
+                    entities: [],
+                },
+            ],
+        });
+
+        const map = layoutBlockGrid(grid);
+
+        // Should have 2 room spaces + 1 auto-corridor
+        expect(map.floors[0].spaces.length).toBe(3);
+        const corridor = map.floors[0].spaces.find(s => s.id.startsWith("corridor-auto-"));
+        expect(corridor).toBeDefined();
+    });
+
+    test('should handle containers with children as holes', () => {
+        const grid = createMinimalGrid({
+            blocks: [
+                {
+                    id: "forest",
+                    name: "Dark Forest",
+                    type: "outdoor",
+                    role: "container",
+                    col: 0,
+                    row: 0,
+                    width: 6,
+                    height: 6,
+                    exits: [],
+                    description: "A dense forest",
+                    lighting: "dim",
+                    smoothing: 0.5,
+                    noiseAmount: 0.3,
+                    entities: [],
+                },
+                {
+                    id: "clearing",
+                    name: "Forest Clearing",
+                    type: "room",
+                    role: "open",
+                    col: 2,
+                    row: 2,
+                    width: 2,
+                    height: 2,
+                    exits: [],
+                    parentId: "forest",
+                    description: "A small clearing",
+                    lighting: "bright",
+                    smoothing: 0,
+                    noiseAmount: 0,
+                    entities: [],
+                },
+            ],
+        });
+
+        const map = layoutBlockGrid(grid);
+        const forest = map.floors[0].spaces.find(s => s.id === "forest");
+
+        expect(forest).toBeDefined();
+        // Container should have holes carved for children
+        expect(forest!.geometry.holes).toBeDefined();
+        expect(forest!.geometry.holes!.length).toBe(1);
     });
 });

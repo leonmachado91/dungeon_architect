@@ -39,6 +39,9 @@ export const SpaceSchema = z.object({
     staticObjects: z.string().optional(),
     coverImage: z.string().optional(),
     notes: z.string().optional(),
+    // Organic shape metadata (set by engine, editable post-generation)
+    smoothing: z.number().min(0).max(1).default(0),
+    noiseAmount: z.number().min(0).max(1).default(0),
 });
 
 // === Floor Schema ===

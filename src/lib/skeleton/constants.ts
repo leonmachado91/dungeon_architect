@@ -8,7 +8,8 @@ export const SKELETON_COLORS = {
     STAIRS: '#CCCCCC',      // Cinza muito claro para escadas
     TEXT: '#000000',        // Preto para textos (debug)
     GRID: '#E5E5E5',        // Grid muito sutil (opcional)
-    VOID: '#000000'         // Preto para o vazio (fora do mapa)
+    VOID: '#000000',        // Preto para o vazio (fora do mapa)
+    INNER_BORDER: '#AAAAAA', // Borda tracejada para sub-espaços internos
 } as const;
 
 export const SKELETON_DIMENSIONS = {
@@ -16,4 +17,5 @@ export const SKELETON_DIMENSIONS = {
     WALL_THICKNESS: 10,     // Espessura da parede em pixels relativos
     DOOR_WIDTH: 60,         // Largura da porta
     CANVAS_SIZE: WORLD_BOUNDS.WIDTH,  // Use centralized world bounds
+    LABEL_FONT: '14px sans-serif', // Fonte para labels dos espaços
 } as const;
